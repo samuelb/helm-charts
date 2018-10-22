@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "jira-software.fullname" . }}
+  labels:
+    app: {{ template "jira-software.name" . }}
+    chart: {{ template "jira-software.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+{{ toYaml .Values.strategy | indent 4 }}
+  selector:
+    matchLabels:
+      app: {{ template "jira-software.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "jira-software.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      securityContext:
+        fsGroup: 2
+      {{- .Values.migrationHelper }}
+      initContainers:
+        - name: migrate
+          image: debian
+          volumeMounts:
+            - name: jira-home
+              mountPath: /var/atlassian/jira
+          command:
+            - sleep
+            - infinity
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          {{/*
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: http
+            initialDelaySeconds: 120
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: http
+          */}}
+          {{- with .Values.env }}
+          env:
+          {{- range $key, $value := . }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
+          volumeMounts:
+            - name: jira-home
+              mountPath: /var/atlassian/jira
+            - name: jira-logs
+              mountPath: /opt/atlassian/jira/logs
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: jira-home
+        {{- if .Values.persistentVolume.data.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistentVolume.data.existingClaim }}{{ .Values.persistentVolume.data.existingClaim }}{{- else }}{{ template "jira-software.fullname" . }}-data {{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        - name: jira-logs
+        {{- if .Values.persistentVolume.logs.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistentVolume.logs.existingClaim }}{{ .Values.persistentVolume.logs.existingClaim }}{{- else }}{{ template "jira-software.fullname" . }}-logs {{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}

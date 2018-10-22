@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "confluence.fullname" . }}
+  labels:
+    app: {{ template "confluence.name" . }}
+    chart: {{ template "confluence.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+{{ toYaml .Values.strategy | indent 4 }}
+  selector:
+    matchLabels:
+      app: {{ template "confluence.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "confluence.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      securityContext:
+        fsGroup: 2
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          {{/*
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: http
+            initialDelaySeconds: 120
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: http
+          */}}
+          {{- with .Values.env }}
+          env:
+          {{- range $key, $value := . }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/atlassian/confluence
+            - name: logs
+              mountPath: /opt/atlassian/confluence/logs
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: data
+        {{- if .Values.persistentVolume.data.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistentVolume.data.existingClaim }}{{ .Values.persistentVolume.data.existingClaim }}{{- else }}{{ template "confluence.fullname" . }}-data {{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        - name: logs
+        {{- if .Values.persistentVolume.logs.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistentVolume.logs.existingClaim }}{{ .Values.persistentVolume.logs.existingClaim }}{{- else }}{{ template "confluence.fullname" . }}-logs {{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}

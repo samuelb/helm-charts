@@ -1,0 +1,77 @@
+# Jira is not capable to run in parallel out of the box, so keep that set
+# to 1 unless you know what you are doing
+replicaCount: 1
+
+image:
+  repository: cptactionhank/atlassian-jira-software
+  tag: latest
+  pullPolicy: IfNotPresent
+
+env:
+  #CATALINA_OPTS: -Xms256m -Xmx1g
+  #X_PROXY_NAME: jira.example.com
+  #X_PROXY_PORT: 443
+  #X_PROXY_SCHEME: https
+
+migrationHelper: false
+
+strategy:
+  type: Recreate
+
+persistentVolume:
+  data:
+    enabled: false
+    # if existingClaim is set, all other options will be ignored
+    #existingClaim: ...
+    annotations: {}
+    accessModes:
+      - ReadWriteOnce
+    #storageClass: -
+    size: 20Gi
+  logs:
+    enabled: false
+    # if existingClaim is set, all other options will be ignored
+    #existingClaim: ...
+    annotations: {}
+    accessModes:
+      - ReadWriteOnce
+    #storageClass: -
+    size: 10Gi
+
+service:
+  annotations: {}
+    #"service.beta.kubernetes.io/aws-load-balancer-internal": "0.0.0.0/0"
+    #"external-dns.alpha.kubernetes.io/hostname": jira.example.com.
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

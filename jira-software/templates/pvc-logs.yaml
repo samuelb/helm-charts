@@ -1,0 +1,30 @@
+{{- if .Values.persistentVolume.logs.enabled -}}
+{{- if not .Values.persistentVolume.logs.existingClaim -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  {{- if .Values.persistentVolume.logs.annotations }}
+  annotations:
+{{ toYaml .Values.persistentVolume.logs.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    app: {{ template "jira-software.name" . }}
+    chart: {{ template "jira-software.chart" . }}
+    heritage: {{ .Release.Service }}
+    releasccessModese: {{ .Release.Name }}
+  name: {{ template "jira-software.fullname" . }}-logs
+spec:
+  accessModes:
+  {{ toYaml .Values.persistentVolume.logs.accessModes | indent 4 }}
+  {{- if .Values.persistentVolume.logs.storageClass }}
+  {{- if (eq "-" .Values.persistentVolume.logs.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: "{{ .Values.persistentVolume.logs.storageClass }}"
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: "{{ .Values.persistentVolume.logs.size }}"
+{{- end -}}
+{{- end -}}

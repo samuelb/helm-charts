@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "simple-nginx.fullname" . }}
+  labels:
+    app: {{ template "simple-nginx.name" . }}
+    chart: {{ template "simple-nginx.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.service.annotations }}
+  annotations:
+{{ toYaml .Values.service.annotations | indent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 8080
+  selector:
+    app: {{ template "simple-nginx.name" . }}
+    release: {{ .Release.Name }}

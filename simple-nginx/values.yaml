@@ -1,0 +1,74 @@
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: stable
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Add multiple nginx configs here as inline string.
+configs:
+  default: |-
+    server {
+      listen 8080 default_server;
+      server_name _;
+      server_tokens off;
+      location / {
+        return 200 "<center><h1>Hello World</h1></center>";
+      }
+    }
+  #http2https: |-
+  #  server {
+  #  	listen 80 default_server;
+  #  	server_name _;
+  #    server_tokens off;
+  #  	return 301 https://$host$request_uri;
+  #  }
+  #wfm: |-
+  #  server {
+  #    listen 8080;
+  #    server_name example.com;
+  #    server_tokens off;
+  #    keepalive_timeout 120;
+  #    location / {
+  #      proxy_pass https://someservice;
+  #      proxy_set_header X-Forwarded-Host $host;
+  #      proxy_set_header X-Forwarded-Server $host;
+  #      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  #    }
+  #  }
